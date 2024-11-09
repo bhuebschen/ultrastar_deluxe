@@ -1,0 +1,17 @@
+{
+    "domain": "ultrastar_deluxe",
+    "name": "UltraStar Deluxe",
+    "documentation": "https://github.com/bhuebschen/ultrastar_deluxe",
+    "requirements": [],
+    "codeowners": [
+        "@bhuebschen"
+    ],
+    "config_flow": true,
+    "version": "0.0.1",
+    "integration_type": "hub",
+    "supported_features": [
+        "media_player",
+        "button",
+        "sensor"
+    ]
+}

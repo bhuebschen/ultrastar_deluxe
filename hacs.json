@@ -1,0 +1,13 @@
+{
+    "name": "UltraStar Deluxe",
+    "description": "A Home Assistant integration to control and receive events from UltraStar Deluxe.",
+    "domain": "ultrastar_deluxe",
+    "codeowners": [
+        "@bhuebschen"
+    ],
+    "requirements": [],
+    "documentation": "https://github.com/bhuebschen/ultrastar_deluxe",
+    "issue_tracker": "https://github.com/bhuebschen/ultrastar_deluxe/issues",
+    "version": "0.0.1",
+    "config_flow": true
+}
