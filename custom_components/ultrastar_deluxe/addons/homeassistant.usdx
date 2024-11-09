@@ -1,0 +1,125 @@
+-- first try creating a USDX-Plugin... heavily WIP
+function plugin_init()
+    register('HomeAssistant', '0.01', 'bhueschen');
+    require('Usdx.Party');
+    require('Usdx.ScreenSing');
+    require('Usdx.Log');
+    require('socket');
+    require('os');
+    local Mode = {}
+    Mode.Name = 'homeassistant';
+    Mode.CanNonParty = true;
+    Mode.CanParty = true;
+    Mode.BeforeSing = 'BeforeSing';
+    Mode.AfterSing = 'AfterSing';
+    Mode.OnSing = 'OnSing';
+    Mode.BeforeSongSelect = 'BeforeSongSelect';
+    Mode.AfterSongSelect = 'AfterSongSelect';
+    Usdx.Party.Register(Mode)
+    return true;
+end
+
+local SERVER_PORT = 12345
+local server = assert(socket.bind("*", SERVER_PORT))
+server:settimeout(0)
+
+local client = nil
+
+local NIRCMD_PATH = [[C:\windows\nircmd.exe]]
+
+local function set_volume(change)
+    local command =
+        string.format('"%s" changesysvolume %d', NIRCMD_PATH, change)
+    os.execute(command)
+end
+
+local function shutdown(change) os.execute("shutdown.exe /s /f /t 0") end
+
+local function send_to_client(message)
+    if client then
+        local success, err = client:send(message .. "\n")
+        if not success then client = nil end
+    end
+end
+
+function AfterSing() return true; end
+
+function BeforeSing() return true; end
+
+function BeforeSongSelect() return true; end
+
+function AfterSongSelect() return true; end
+
+function OnSing()
+    Scores = ScreenSing.GetScores();
+    -- Scores[i]
+    return true;
+end
+
+function on_song_position()
+    if ScreenSing and ScreenSing.GetBeat then
+        local position = ScreenSing.GetBeat()
+        local message = "song_position:" .. tostring(position)
+        send_to_client(message)
+    else
+        print("ScreenSing.GetBeat() nicht verfügbar.")
+    end
+end
+
+function on_state_change(state)
+    local message = "state:" .. state
+    send_to_client(message)
+end
+
+function on_score()
+    if ScreenSing and ScreenSing.GetScore then
+        local score = ScreenSing.GetScore()
+        local message = "score:" .. tostring(score)
+        send_to_client(message)
+    else
+        print("ScreenSing.GetScore() not available.")
+    end
+end
+
+function on_rating()
+    if ScreenSing and ScreenSing.GetRating then
+        local rating = ScreenSing.GetRating()
+        local message = "rating:" .. tostring(rating)
+        send_to_client(message)
+    else
+        print("ScreenSing.GetRating() not available.")
+    end
+end
+
+while true do
+
+    if not client then
+        client = server:accept()
+        if client then client:settimeout(0) end
+    end
+
+    if client then
+        local data, err = client:receive("*l")
+        if data then
+            if data:match("^set_volume:") then
+                local volume_change = tonumber(data:match("set_volume:(-?%d+)"))
+                if volume_change then
+                    set_volume(volume_change)
+                else
+                    print("Invalid vol value.")
+                end
+            elseif data:match("^shutdown") then
+                shutdown()
+            end
+        elseif err == "closed" then
+            client = nil
+        end
+    end
+
+    on_song_position()
+    on_score()
+    on_rating()
+    on_state_change("play")
+
+    socket.sleep(1)
+end
